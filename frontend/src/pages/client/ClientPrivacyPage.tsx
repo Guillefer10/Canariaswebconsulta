@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Alert from '../../components/common/Alert'
+import { Toast } from '../../components/common/Toast'
 import { useAuth } from '../../hooks/useAuth'
 import { useCreateConsent, useMyConsents } from '../../hooks/useConsents'
 import { fetchClientMe } from '../../services/clientService'
@@ -14,6 +15,7 @@ const ClientPrivacyPage = () => {
   const [profile, setProfile] = useState<ClientProfile | null>(null)
   const [profileError, setProfileError] = useState<string | null>(null)
   const [loadingProfile, setLoadingProfile] = useState(true)
+  const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
 
   const createConsent = useCreateConsent(profile?.id ?? 0)
 
@@ -33,13 +35,19 @@ const ClientPrivacyPage = () => {
 
   const registerConsent = (type: ConsentType) => {
     if (!profile) return
-    createConsent.mutate({
-      consent_type: type,
-      text_version: CONSENT_TEXT_VERSION,
-      ip_address: '',
-      user_agent: navigator.userAgent,
-      client_id: profile.id,
-    })
+    createConsent.mutate(
+      {
+        consent_type: type,
+        text_version: CONSENT_TEXT_VERSION,
+        ip_address: '',
+        user_agent: navigator.userAgent,
+        client_id: profile.id,
+      },
+      {
+        onSuccess: () => setToast({ type: 'success', message: 'Consentimiento registrado' }),
+        onError: () => setToast({ type: 'error', message: 'No pudimos registrar tu consentimiento' }),
+      },
+    )
   }
 
   return (
@@ -99,6 +107,7 @@ const ClientPrivacyPage = () => {
           </section>
         </>
       )}
+      {toast && <Toast type={toast.type} message={toast.message} />}
     </div>
   )
 }

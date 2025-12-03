@@ -10,6 +10,9 @@ from app.models.appointment import Appointment, AppointmentStatus
 from app.schemas.appointment import AppointmentCreate, AppointmentReschedule, AppointmentUpdate
 from app.utils.exceptions import bad_request, forbidden, not_found
 from app.utils.validators import ensure_worker
+from app.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class AppointmentService:
@@ -113,7 +116,9 @@ class AppointmentService:
             self._ensure_no_overlap(db, appointment.worker_id, new_start, new_end, exclude_id=appointment.id)
 
         try:
-            return crud_appointment.update(db, appointment, data)
+            updated = crud_appointment.update(db, appointment, data)
+            logger.info("Appointment %s updated by user %s", appointment.id, current_user.id)
+            return updated
         except ValueError as ex:
             raise bad_request(str(ex))
 
@@ -123,10 +128,19 @@ class AppointmentService:
         if data.status is None:
             raise bad_request("Estado requerido")
 
+        if current_user.role == "client":
+            profile = crud_client_profile.get_by_user(db, current_user.id)
+            if not profile or appointment.client_id != profile.id:
+                raise forbidden("No autorizado")
+        if current_user.role == "worker" and appointment.worker_id != current_user.id:
+            raise forbidden("No autorizado")
+
         self._validate_status_transition(appointment.status, data.status, current_user.role, appointment.start_datetime)
 
         try:
-            return crud_appointment.update(db, appointment, {"status": data.status})
+            updated = crud_appointment.update(db, appointment, {"status": data.status})
+            logger.info("Appointment %s status changed to %s by user %s", appointment.id, data.status, current_user.id)
+            return updated
         except ValueError as ex:
             raise bad_request(str(ex))
 
@@ -149,11 +163,13 @@ class AppointmentService:
         self._ensure_no_overlap(db, appointment.worker_id, data.start_datetime, new_end, exclude_id=appointment.id)
 
         try:
-            return crud_appointment.update(
+            updated = crud_appointment.update(
                 db,
                 appointment,
                 {"start_datetime": data.start_datetime, "end_datetime": new_end},
             )
+            logger.info("Appointment %s rescheduled by user %s", appointment.id, current_user.id)
+            return updated
         except ValueError as ex:
             raise bad_request(str(ex))
 
@@ -171,7 +187,9 @@ class AppointmentService:
             raise forbidden("No autorizado")
 
         try:
-            return crud_appointment.update(db, appointment, {"status": status})
+            updated = crud_appointment.update(db, appointment, {"status": status})
+            logger.info("Appointment %s cancelled as %s by user %s", appointment.id, status, current_user.id)
+            return updated
         except ValueError as ex:
             raise bad_request(str(ex))
 

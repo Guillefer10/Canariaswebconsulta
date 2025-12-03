@@ -7,6 +7,9 @@ import EmptyState from '../../components/common/EmptyState'
 import {
   useAppointments,
   useCreateAppointment,
+  useChangeAppointmentStatus,
+  useRescheduleAppointment,
+  useCancelAppointment,
 } from '../../hooks/useAppointments'
 import { useClients } from '../../hooks/useClients'
 import { useTreatments } from '../../hooks/useTreatments'
@@ -19,6 +22,9 @@ const WorkerAgendaPage = () => {
   const { data: clients, isLoading: clientsLoading, error: clientsError } = useClients()
   const { data: treatments, isLoading: treatmentsLoading, error: treatmentsError } = useTreatments()
   const createAppointment = useCreateAppointment()
+  const changeStatus = useChangeAppointmentStatus()
+  const reschedule = useRescheduleAppointment()
+  const cancel = useCancelAppointment()
 
   const loading = apptLoading || clientsLoading || treatmentsLoading
   const error = apptError || clientsError || treatmentsError
@@ -48,7 +54,15 @@ const WorkerAgendaPage = () => {
 
   return (
     <>
-      <CalendarView appointments={appointments ?? []} onCreate={() => setShowForm(true)} />
+      <CalendarView
+        appointments={appointments ?? []}
+        onCreate={() => setShowForm(true)}
+        onChangeStatus={(id, status) => changeStatus.mutate({ id, status })}
+        onReschedule={(id, start, end) =>
+          reschedule.mutate({ id, payload: { start_datetime: start, end_datetime: end ?? undefined } })
+        }
+        onCancel={(id) => cancel.mutate(id)}
+      />
 
       {showForm && clients && treatments && (
         <div className="card">

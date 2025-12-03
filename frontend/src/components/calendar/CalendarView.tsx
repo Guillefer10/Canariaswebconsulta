@@ -1,5 +1,7 @@
 import EmptyState from '../common/EmptyState'
-import { Appointment } from '../../types/appointment'
+import { Appointment, AppointmentStatus } from '../../types/appointment'
+import { StatusBadge } from '../common/StatusBadge'
+import { StatusBadge } from '../common/StatusBadge'
 
 const formatDay = (date: Date) =>
   date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
@@ -7,7 +9,15 @@ const formatDay = (date: Date) =>
 const formatTime = (iso: string) =>
   new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 
-export const CalendarView = ({ appointments, onCreate }: { appointments: Appointment[]; onCreate: () => void }) => {
+type CalendarViewProps = {
+  appointments: Appointment[]
+  onCreate: () => void
+  onReschedule?: (id: number, newStart: string, newEnd: string | null) => void
+  onChangeStatus?: (id: number, status: AppointmentStatus) => void
+  onCancel?: (id: number) => void
+}
+
+export const CalendarView = ({ appointments, onCreate, onReschedule, onChangeStatus, onCancel }: CalendarViewProps) => {
   const today = new Date()
   const startOfWeek = new Date(today)
   const day = startOfWeek.getDay()
@@ -71,7 +81,39 @@ export const CalendarView = ({ appointments, onCreate }: { appointments: Appoint
                       <div className="calendar-slot-time">{formatTime(slot.start_datetime)}</div>
                       <div className="muted">Cliente #{slot.client_id} / Trabajador #{slot.worker_id}</div>
                     </div>
-                    <span className={`badge ${slot.status}`}>{slot.status}</span>
+                    <div className="slot-actions">
+                      <StatusBadge status={slot.status} />
+                      {onChangeStatus && (
+                        <>
+                          {slot.status === 'pendiente' && (
+                            <button className="button small secondary" onClick={() => onChangeStatus(slot.id, 'confirmada')}>
+                              Confirmar
+                            </button>
+                          )}
+                          {slot.status !== 'cancelada_clinica' && (
+                            <button className="button small ghost" onClick={() => onCancel?.(slot.id)}>
+                              Cancelar
+                            </button>
+                          )}
+                        </>
+                      )}
+                      {onReschedule && (
+                        <button
+                          className="button small ghost"
+                          onClick={() => {
+                            const newStart = prompt('Nueva fecha/hora (YYYY-MM-DDTHH:mm)', slot.start_datetime.slice(0, 16))
+                            if (!newStart) return
+                            const duration =
+                              new Date(slot.end_datetime).getTime() - new Date(slot.start_datetime).getTime()
+                            const nextStart = new Date(newStart).toISOString()
+                            const nextEnd = new Date(new Date(newStart).getTime() + duration).toISOString()
+                            onReschedule(slot.id, nextStart, nextEnd)
+                          }}
+                        >
+                          Reprogramar
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
