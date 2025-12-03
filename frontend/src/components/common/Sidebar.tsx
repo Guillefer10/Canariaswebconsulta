@@ -11,6 +11,7 @@ const adminLinks = [
 const workerLinks = [
   { to: '/worker', label: 'Dashboard' },
   { to: '/worker/agenda', label: 'Mi agenda' },
+  { to: '/worker/clinical', label: 'Historia clínica' },
 ]
 
 const clientLinks = [

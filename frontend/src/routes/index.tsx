@@ -7,6 +7,7 @@ import TreatmentsPage from '../pages/admin/TreatmentsPage'
 import CalendarPage from '../pages/admin/CalendarPage'
 import WorkerDashboard from '../pages/worker/WorkerDashboard'
 import WorkerAgendaPage from '../pages/worker/WorkerAgendaPage'
+import WorkerClinicalPage from '../pages/worker/WorkerClinicalPage'
 import ClientDashboard from '../pages/client/ClientDashboard'
 import ClientProfilePage from '../pages/client/ClientProfilePage'
 import ClientAppointmentsPage from '../pages/client/ClientAppointmentsPage'
@@ -80,6 +81,14 @@ function AppRoutes() {
         element={
           <PrivateRoute roles={["worker"]}>
             <WorkerAgendaPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/worker/clinical"
+        element={
+          <PrivateRoute roles={["worker"]}>
+            <WorkerClinicalPage />
           </PrivateRoute>
         }
       />

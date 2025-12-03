@@ -8,7 +8,8 @@ class Settings(BaseSettings):
     jwt_secret: str = Field(..., env="JWT_SECRET")
     jwt_algorithm: str = Field("HS256", env="JWT_ALGORITHM")
     jwt_expires_minutes: int = Field(60, env="JWT_EXPIRES_MINUTES")
-    cors_origins: list[str] = ["http://localhost:5173"]
+    cors_origins: list[str] = Field(default=["http://localhost:5173"], env="CORS_ORIGINS")
+    environment: str = Field("local", env="ENVIRONMENT")
 
     @field_validator("cors_origins", mode="before")
     @classmethod

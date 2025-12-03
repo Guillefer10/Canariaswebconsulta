@@ -20,9 +20,18 @@ DATABASE_URL=postgresql+psycopg2://user:password@localhost:5432/beauty_clinic
 JWT_SECRET=changeme
 JWT_ALGORITHM=HS256
 JWT_EXPIRES_MINUTES=60
+ENVIRONMENT=local
+CORS_ORIGINS=http://localhost:5173
 ```
 
 Endpoints bajo `/api/v1` con JWT, gestion de usuarios, clientes, tratamientos, sesiones y citas con reglas de negocio centralizadas en `app/services/appointment_service.py` (sin solapes, horario laboral, validaciones por rol).
+
+Migraciones Alembic:
+```bash
+cd backend
+alembic upgrade head  # aplica migraciones (incluye clinical/consents e índices)
+alembic revision --autogenerate -m "mensaje"  # generar nuevas revisiones
+```
 
 ## Frontend (React + Vite)
 
@@ -56,3 +65,7 @@ docker-compose up --build
 ```
 
 `VITE_API_BASE_URL` se inyecta al contenedor de frontend apuntando a `/api/v1`.
+
+## Scripts rápidos (Windows PowerShell)
+- Backend: `.\start-backend.ps1` → crea venv si falta, instala deps, aplica migraciones Alembic y levanta uvicorn en 8000.
+- Frontend: `.\start-frontend.ps1` → instala deps si falta `node_modules` y arranca `npm run dev` en 5173.
