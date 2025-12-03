@@ -10,3 +10,8 @@ export const fetchClient = async (id: number, token?: string): Promise<ClientPro
   const { data } = await apiClient(token).get<ClientProfile>(`/clients/${id}`)
   return data
 }
+
+export const fetchClientMe = async (token?: string): Promise<ClientProfile> => {
+  const { data } = await apiClient(token).get<ClientProfile>('/clients/me')
+  return data
+}

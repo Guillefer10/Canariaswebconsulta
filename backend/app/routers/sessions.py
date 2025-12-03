@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user, get_db
@@ -6,7 +6,7 @@ from app.crud.treatment_session import crud_treatment_session
 from app.crud.client_profile import crud_client_profile
 from app.crud.user import crud_user
 from app.schemas.treatment_session import TreatmentSessionCreate, TreatmentSessionRead, TreatmentSessionUpdate
-from app.utils.exceptions import not_found
+from app.utils.exceptions import not_found, forbidden
 from app.utils.validators import ensure_worker
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
@@ -17,7 +17,7 @@ def _can_manage(user, client_id: int, db: Session):
     if not profile:
         raise not_found("ClientProfile")
     if user.role == "client" and profile.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise forbidden("No autorizado")
     return profile
 
 
@@ -35,7 +35,7 @@ def create_session(
     current_user=Depends(get_current_user),
 ):
     if current_user.role == "client":
-        raise HTTPException(status_code=403, detail="Clients cannot register treatment sessions")
+        raise forbidden("Los clientes no pueden registrar sesiones")
     _can_manage(current_user, client_id, db)
     worker = crud_user.get(db, data.worker_id)
     if not worker:
