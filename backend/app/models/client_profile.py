@@ -20,3 +20,6 @@ class ClientProfile(Base):
     user = relationship("User", back_populates="client_profile")
     treatment_sessions = relationship("TreatmentSession", back_populates="client")
     appointments = relationship("Appointment", back_populates="client")
+    clinical_episodes = relationship("ClinicalEpisode", back_populates="client")
+    clinical_notes = relationship("ClinicalNote", back_populates="client")
+    consents = relationship("ConsentRecord", back_populates="client")

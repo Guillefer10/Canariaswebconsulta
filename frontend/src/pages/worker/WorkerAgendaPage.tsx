@@ -1,59 +1,33 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Appointment, AppointmentCreatePayload } from '../../types/appointment'
-import { ClientProfile } from '../../types/client'
-import { TreatmentType } from '../../types/treatment'
+import { useMemo, useState } from 'react'
+import { AppointmentCreatePayload } from '../../types/appointment'
 import { useAuth } from '../../hooks/useAuth'
 import { CalendarView } from '../../components/calendar/CalendarView'
 import { AppointmentForm } from '../../components/forms/AppointmentForm'
-import { createAppointment, fetchAppointments } from '../../services/appointmentService'
-import { fetchClients } from '../../services/clientService'
-import { fetchTreatments } from '../../services/treatmentService'
 import EmptyState from '../../components/common/EmptyState'
-import { User } from '../../types/user'
+import {
+  useAppointments,
+  useCreateAppointment,
+} from '../../hooks/useAppointments'
+import { useClients } from '../../hooks/useClients'
+import { useTreatments } from '../../hooks/useTreatments'
 
 const WorkerAgendaPage = () => {
-  const { token, user } = useAuth()
-  const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [clients, setClients] = useState<ClientProfile[]>([])
-  const [treatments, setTreatments] = useState<TreatmentType[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth()
   const [showForm, setShowForm] = useState(false)
-  const [saving, setSaving] = useState(false)
 
-  const workers: User[] = useMemo(() => (user ? [user] : []), [user])
+  const { data: appointments, isLoading: apptLoading, error: apptError } = useAppointments()
+  const { data: clients, isLoading: clientsLoading, error: clientsError } = useClients()
+  const { data: treatments, isLoading: treatmentsLoading, error: treatmentsError } = useTreatments()
+  const createAppointment = useCreateAppointment()
 
-  const loadData = () => {
-    if (!token) return
-    setLoading(true)
-    Promise.all([fetchAppointments(token), fetchClients(token), fetchTreatments(token)])
-      .then(([apts, clientList, treatmentList]) => {
-        setAppointments(apts)
-        setClients(clientList)
-        setTreatments(treatmentList)
-        setError(null)
-      })
-      .catch(() => setError('No se pudo cargar la agenda'))
-      .finally(() => setLoading(false))
-  }
+  const loading = apptLoading || clientsLoading || treatmentsLoading
+  const error = apptError || clientsError || treatmentsError
 
-  useEffect(() => {
-    loadData()
-  }, [token])
+  const workers = useMemo(() => (user ? [user] : []), [user])
 
   const handleCreate = async (payload: AppointmentCreatePayload) => {
-    if (!token) return
-    try {
-      setSaving(true)
-      const newAppointment = await createAppointment(payload, token)
-      setAppointments((prev) => [...prev, newAppointment])
-      setShowForm(false)
-      setError(null)
-    } catch (err) {
-      setError('No se pudo crear la cita')
-    } finally {
-      setSaving(false)
-    }
+    await createAppointment.mutateAsync(payload)
+    setShowForm(false)
   }
 
   if (loading) return <p className="muted">Cargando agenda...</p>
@@ -62,24 +36,30 @@ const WorkerAgendaPage = () => {
     return (
       <EmptyState
         title="Error al cargar la agenda"
-        description={error}
-        action={<button className="button" onClick={loadData}>Reintentar</button>}
+        description="Comprueba tu conexión e inténtalo de nuevo."
+        action={
+          <button className="button" onClick={() => window.location.reload()}>
+            Reintentar
+          </button>
+        }
       />
     )
   }
 
   return (
     <>
-      <CalendarView appointments={appointments} onCreate={() => setShowForm(true)} />
+      <CalendarView appointments={appointments ?? []} onCreate={() => setShowForm(true)} />
 
-      {showForm && (
+      {showForm && clients && treatments && (
         <div className="card">
           <div className="card-header">
             <div>
               <h3>Nueva cita</h3>
               <p className="muted">Completa los datos y guarda para agendar</p>
             </div>
-            <button className="button ghost" onClick={() => setShowForm(false)}>Cerrar</button>
+            <button className="button ghost" onClick={() => setShowForm(false)}>
+              Cerrar
+            </button>
           </div>
           <AppointmentForm
             clients={clients}
@@ -89,7 +69,8 @@ const WorkerAgendaPage = () => {
             onSubmit={handleCreate}
             onCancel={() => setShowForm(false)}
           />
-          {saving && <p className="muted">Guardando cita...</p>}
+          {createAppointment.isPending && <p className="muted">Guardando cita...</p>}
+          {createAppointment.isError && <p className="error">No se pudo crear la cita.</p>}
         </div>
       )}
     </>

@@ -280,7 +280,9 @@ label {
 }
 
 .badge.cancelled,
-.badge.cancelada {
+.badge.cancelada,
+.badge.cancelada_clinica,
+.badge.cancelada_paciente {
   background: #fee2e2;
   color: #991b1b;
 }
@@ -289,6 +291,11 @@ label {
 .badge.realizada {
   background: #dbeafe;
   color: #1d4ed8;
+}
+
+.badge.no_show {
+  background: #f3e8ff;
+  color: #6b21a8;
 }
 
 .empty-state {

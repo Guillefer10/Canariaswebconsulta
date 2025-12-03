@@ -16,6 +16,7 @@ const workerLinks = [
 const clientLinks = [
   { to: '/client', label: 'Dashboard' },
   { to: '/client/profile', label: 'Mis datos' },
+  { to: '/client/privacy', label: 'Privacidad' },
   { to: '/client/appointments', label: 'Mis citas' },
   { to: '/client/treatments', label: 'Mis tratamientos' },
 ]

@@ -1,6 +1,7 @@
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
+from sqlalchemy import Index
 
 from app.db.base import Base
 
@@ -19,3 +20,8 @@ class TreatmentSession(Base):
     client = relationship("ClientProfile", back_populates="treatment_sessions")
     worker = relationship("User", back_populates="worker_sessions")
     treatment_type = relationship("TreatmentType")
+
+    __table_args__ = (
+        Index("ix_session_client_performed", "client_id", "performed_at"),
+        Index("ix_session_worker_performed", "worker_id", "performed_at"),
+    )

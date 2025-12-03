@@ -11,6 +11,7 @@ import ClientDashboard from '../pages/client/ClientDashboard'
 import ClientProfilePage from '../pages/client/ClientProfilePage'
 import ClientAppointmentsPage from '../pages/client/ClientAppointmentsPage'
 import ClientTreatmentsPage from '../pages/client/ClientTreatmentsPage'
+import ClientPrivacyPage from '../pages/client/ClientPrivacyPage'
 import NotFoundPage from '../pages/misc/NotFoundPage'
 import UnauthorizedPage from '../pages/misc/UnauthorizedPage'
 import { useRoleGuard } from '../hooks/useRoleGuard'
@@ -95,6 +96,14 @@ function AppRoutes() {
         element={
           <PrivateRoute roles={["client"]}>
             <ClientProfilePage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/client/privacy"
+        element={
+          <PrivateRoute roles={["client"]}>
+            <ClientPrivacyPage />
           </PrivateRoute>
         }
       />
