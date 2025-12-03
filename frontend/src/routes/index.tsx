@@ -16,9 +16,9 @@ import UnauthorizedPage from '../pages/misc/UnauthorizedPage'
 import { useRoleGuard } from '../hooks/useRoleGuard'
 
 const PrivateRoute = ({ roles, children }: { roles: string[]; children: JSX.Element }) => {
-  const { user } = useRoleGuard(roles)
+  const { user, allowed } = useRoleGuard(roles)
   if (user === null) return <Navigate to="/login" />
-  if (!roles.includes(user.role)) return <UnauthorizedPage />
+  if (!allowed) return <UnauthorizedPage />
   return children
 }
 

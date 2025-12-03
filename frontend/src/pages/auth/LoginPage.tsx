@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
+import Alert from '../../components/common/Alert'
 
 const LoginPage = () => {
   const [email, setEmail] = useState('')
@@ -15,7 +16,7 @@ const LoginPage = () => {
       await login({ email, password })
       navigate('/')
     } catch (err) {
-      setError('Credenciales inválidas')
+      setError('Credenciales invalidas')
     }
   }
 
@@ -23,7 +24,7 @@ const LoginPage = () => {
     <div className="auth-wrapper">
       <div className="auth-card">
         <h2>Bienvenido a Beauty Clinic</h2>
-        <p className="helper-text">Accede con tu correo y contraseña para continuar.</p>
+        <p className="helper-text">Accede con tu correo y contrasena para continuar.</p>
         <form onSubmit={handleSubmit}>
           <label>Email</label>
           <input
@@ -33,19 +34,19 @@ const LoginPage = () => {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <label>Contraseña</label>
+          <label>Contrasena</label>
           <input
             type="password"
             value={password}
-            placeholder="••••••••"
+            placeholder="********"
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          {error && <p style={{ color: '#dc2626', marginTop: 0 }}>{error}</p>}
+          {error && <Alert type="error" message={error} />}
           <button className="button" type="submit">Entrar</button>
         </form>
-        <p className="helper-text" style={{ marginTop: '1rem' }}>
-          ¿Necesitas una cuenta? Pide acceso al administrador de la clínica.
+        <p className="helper-text mt-1">
+          Necesitas una cuenta? Pide acceso al administrador de la clinica.
         </p>
       </div>
     </div>

@@ -1,18 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user, get_db
 from app.crud.client_profile import crud_client_profile
 from app.crud.user import crud_user
 from app.schemas.client_profile import ClientProfileCreate, ClientProfileRead, ClientProfileUpdate
-from app.utils.exceptions import not_found, bad_request
+from app.utils.exceptions import not_found, bad_request, forbidden
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 
 
 def _authorize(user):
     if user.role not in ("admin", "worker"):
-        raise HTTPException(status_code=403, detail="Not enough permissions")
+        raise forbidden("Permisos insuficientes")
 
 
 @router.get("/", response_model=list[ClientProfileRead])
@@ -49,13 +49,21 @@ def create_client(profile_in: ClientProfileCreate, db: Session = Depends(get_db)
     return crud_client_profile.create(db, profile_in)
 
 
+@router.get("/me", response_model=ClientProfileRead)
+def get_my_profile(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    profile = crud_client_profile.get_by_user(db, current_user.id)
+    if not profile:
+        raise not_found("ClientProfile")
+    return profile
+
+
 @router.get("/{profile_id}", response_model=ClientProfileRead)
 def get_client(profile_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     profile = crud_client_profile.get(db, profile_id)
     if not profile:
         raise not_found("ClientProfile")
     if current_user.role == "client" and profile.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise forbidden("No autorizado")
     return profile
 
 
@@ -65,5 +73,5 @@ def update_client(profile_id: int, profile_in: ClientProfileUpdate, db: Session 
     if not profile:
         raise not_found("ClientProfile")
     if current_user.role == "client" and profile.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise forbidden("No autorizado")
     return crud_client_profile.update(db, profile, profile_in)

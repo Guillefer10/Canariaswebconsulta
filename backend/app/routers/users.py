@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_admin, get_db
@@ -19,11 +19,11 @@ def list_users(db: Session = Depends(get_db), _: None = Depends(get_current_admi
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def create_user(user_in: UserCreate, db: Session = Depends(get_db), _: None = Depends(get_current_admin)):
     if crud_user.get_by_email(db, user_in.email):
-        raise bad_request("Email already registered")
+        raise bad_request("Email ya registrado")
     user = crud_user.create(db, user_in)
     if user.role == "client":
         # basic profile placeholder
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Client profile required; create via /clients")
+        raise bad_request("Perfil de cliente requerido; crea uno via /clients")
     return user
 
 

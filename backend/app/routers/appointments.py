@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user, get_db
@@ -9,7 +9,7 @@ from app.crud.treatment_type import crud_treatment_type
 from app.crud.user import crud_user
 from app.schemas.appointment import AppointmentCreate, AppointmentRead, AppointmentUpdate
 from app.models.appointment import AppointmentStatus
-from app.utils.exceptions import not_found, bad_request
+from app.utils.exceptions import not_found, bad_request, forbidden
 from app.utils.validators import ensure_worker
 
 router = APIRouter(prefix="/appointments", tags=["appointments"])
@@ -35,6 +35,26 @@ def _filter_query(db: Session, user, start: datetime | None, end: datetime | Non
     return query
 
 
+def _validate_status_transition(current_status: AppointmentStatus, new_status: AppointmentStatus | None, role: str):
+    if new_status is None or new_status == current_status:
+        return
+
+    allowed = {
+        "admin": {
+            AppointmentStatus.pending: {AppointmentStatus.confirmed, AppointmentStatus.cancelled},
+            AppointmentStatus.confirmed: {AppointmentStatus.done, AppointmentStatus.cancelled},
+        },
+        "worker": {
+            AppointmentStatus.pending: {AppointmentStatus.confirmed, AppointmentStatus.cancelled},
+            AppointmentStatus.confirmed: {AppointmentStatus.done, AppointmentStatus.cancelled},
+        },
+    }
+
+    role_allowed = allowed.get(role, {})
+    if new_status not in role_allowed.get(current_status, set()):
+        raise bad_request("Transicion de estado no permitida para este rol")
+
+
 @router.get("/", response_model=list[AppointmentRead])
 def list_appointments(
     start: datetime | None = Query(None),
@@ -53,7 +73,7 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), c
     if current_user.role == "client":
         profile = crud_client_profile.get_by_user(db, current_user.id)
         if not profile or profile.id != data.client_id:
-            raise HTTPException(status_code=403, detail="Cannot create appointment for other clients")
+            raise forbidden("No puedes crear citas para otros clientes")
     client_profile = crud_client_profile.get(db, data.client_id)
     if not client_profile:
         raise not_found("ClientProfile")
@@ -64,6 +84,8 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), c
     treatment = crud_treatment_type.get(db, data.treatment_type_id)
     if not treatment:
         raise not_found("TreatmentType")
+    if data.start_datetime < datetime.utcnow():
+        raise bad_request("No se puede crear una cita en el pasado")
 
     end_time = data.end_datetime
     if not end_time:
@@ -71,6 +93,7 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), c
     payload = data.model_dump()
     payload["end_datetime"] = end_time
     payload["created_by_user_id"] = current_user.id
+    payload["status"] = AppointmentStatus.pending
     try:
         return crud_appointment.create(db, AppointmentCreate(**payload))
     except ValueError as ex:
@@ -83,9 +106,10 @@ def update_appointment(appointment_id: int, data: AppointmentUpdate, db: Session
     if not appointment:
         raise not_found("Appointment")
     if current_user.role == "client":
-        raise HTTPException(status_code=403, detail="Clients can only cancel their appointments")
+        raise forbidden("Los clientes solo pueden cancelar sus citas")
     if current_user.role == "worker" and appointment.worker_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise forbidden("No autorizado")
+    _validate_status_transition(appointment.status, data.status, current_user.role)
     try:
         return crud_appointment.update(db, appointment, data)
     except ValueError as ex:
@@ -100,7 +124,7 @@ def cancel_appointment(appointment_id: int, db: Session = Depends(get_db), curre
     if current_user.role == "client":
         profile = crud_client_profile.get_by_user(db, current_user.id)
         if not profile or appointment.client_id != profile.id:
-            raise HTTPException(status_code=403, detail="Not authorized")
+            raise forbidden("No autorizado")
     if current_user.role == "worker" and appointment.worker_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise forbidden("No autorizado")
     return crud_appointment.update(db, appointment, {"status": AppointmentStatus.cancelled})
