@@ -35,6 +35,11 @@ class AppointmentUpdate(BaseModel):
     notes: Optional[str] = None
 
 
+class AppointmentReschedule(BaseModel):
+    start_datetime: datetime
+    end_datetime: Optional[datetime] = None
+
+
 class AppointmentRead(AppointmentBase):
     id: int
     created_at: Optional[datetime] = None

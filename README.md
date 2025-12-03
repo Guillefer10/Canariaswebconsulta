@@ -1,12 +1,10 @@
 # Canariaswebconsulta
 
-Proyecto full-stack para la gestión de una clínica de belleza/estética.
+Plataforma full-stack para gestion de clinica (agenda, pacientes, historia clinica ligera, consentimientos y dashboards).
 
 ## Backend (FastAPI)
 
 Requisitos: Python 3.11+
-
-Instala dependencias y arranca el servidor en modo desarrollo:
 
 ```bash
 cd backend
@@ -24,7 +22,7 @@ JWT_ALGORITHM=HS256
 JWT_EXPIRES_MINUTES=60
 ```
 
-La API expone los endpoints bajo `/api/v1` e incluye autenticación JWT, gestión de usuarios (admin), clientes, tratamientos, sesiones y citas con validaciones básicas.
+Endpoints bajo `/api/v1` con JWT, gestion de usuarios, clientes, tratamientos, sesiones y citas con reglas de negocio centralizadas en `app/services/appointment_service.py` (sin solapes, horario laboral, validaciones por rol).
 
 ## Frontend (React + Vite)
 
@@ -36,8 +34,25 @@ npm install
 npm run dev -- --port 5173
 ```
 
-Puedes configurar la URL de la API con `VITE_API_BASE_URL` (por defecto `http://localhost:8000/api/v1`). La SPA consume la API del backend y ofrece dashboards para administradores, trabajadores y clientes con rutas protegidas por rol.
+Configura la URL de API con `VITE_API_BASE_URL` (por defecto `http://localhost:8000/api/v1`). SPA con rutas protegidas por rol y React Query para datos.
 
 ### Experiencia visual y modo nocturno
 
-La interfaz utiliza un diseño de panel limpio, con tarjetas y tablas estilizadas para cada vista. Desde la barra superior puedes alternar entre modo claro y nocturno; la preferencia se guarda en `localStorage` y respeta el esquema de color del sistema cuando es la primera carga.
+Diseño de panel con tarjetas/tablas; modo claro/oscuro con preferencia en `localStorage`.
+
+## Resumen funcional
+- Citas con estados (`pendiente`, `confirmada`, `realizada`, `cancelada_paciente`, `cancelada_clinica`, `no_show`) y transiciones validadas.
+- Historia clinica ligera: episodios y notas en `/clinical/...`.
+- Consentimientos RGPD en `/consents/...` (privacidad y datos de salud).
+- Dashboards por rol en `/dashboards/...` (admin, worker, client).
+- Frontend con servicios para citas, clinica, consentimientos y dashboards.
+
+## Docker
+
+Arranque completo con Postgres, backend y frontend (nginx):
+
+```bash
+docker-compose up --build
+```
+
+`VITE_API_BASE_URL` se inyecta al contenedor de frontend apuntando a `/api/v1`.

@@ -12,7 +12,14 @@ class CRUDAppt(CRUDBase[Appointment, AppointmentCreate, AppointmentUpdate]):
     def get_overlapping(self, db: Session, worker_id: int, start: datetime, end: datetime, exclude_id: Optional[int] = None) -> List[Appointment]:
         query = db.query(Appointment).filter(
             Appointment.worker_id == worker_id,
-            Appointment.status != AppointmentStatus.cancelled,
+            Appointment.status.notin_(
+                [
+                    AppointmentStatus.cancelled_by_client,
+                    AppointmentStatus.cancelled_by_clinic,
+                    AppointmentStatus.no_show,
+                    AppointmentStatus.done,
+                ]
+            ),
             or_(
                 and_(Appointment.start_datetime <= start, Appointment.end_datetime > start),
                 and_(Appointment.start_datetime < end, Appointment.end_datetime >= end),
